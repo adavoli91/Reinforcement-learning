@@ -1,0 +1,22 @@
+{
+  environment:
+  {
+  },
+  model:
+  {
+    n_neurons: [64, 64],
+    gamma: 0.99,
+    epsilon_in: 1,
+    epsilon_fin: 0.075,
+    n_episodes: 3000,
+    max_timestep_per_ep: 1000,
+    n_ep_start_decr_eps: 100,
+    n_ep_step_decr_eps: 10,
+    n_ep_keep_eps_fixed: 500,
+    len_memory: 5000,
+    batch_size: 64,
+    n_timestep_update_target: 10,
+    device: 'cpu',
+    lr: 0.0005
+  }
+}
