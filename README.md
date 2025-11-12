@@ -37,15 +37,11 @@ The shape of $\epsilon$ is shown in the following plot:
 ## Result
 Initial result of the agent:
 
-<video width = '320" height = '240' controls>
-  <source src = 'video/experience_0-episode-0.mp4' type = 'video/mp4'>
-</video>
+![Episode 850](video/experience_0-episode-0.gif)
 
 After 300 episodes:
 
-<video width = '320' height = '240' controls>
-  <source src = 'video/experience_300-episode-0.mp4' type = 'video/mp4'>
-</video>
+![Episode 850](video/experience_300-episode-0.gif)
 
 At the end of the training:
 
