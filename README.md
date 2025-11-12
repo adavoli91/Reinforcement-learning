@@ -23,9 +23,9 @@ The exploration parameter $\epsilon$ is modelled in the following way, as a func
 
 $$\epsilon(n) =
 \begin{cases}
-\epsilon_i &\mathrm{if} n \leq n_i \\
-\epsilon_i + (\epsilon_f - \epsilon_i) \dfrac{n_f}{n_i - n_f}\left(1 - \dfrac{n_i}{\tilde n}\right) &\mathrm{if} n_i < n \leq n_f \\
-\epsilon_f  &\mathrm{if} n > n_f
+\epsilon_i &\mathrm{if}\quad n \leq n_i \\
+\epsilon_i + (\epsilon_f - \epsilon_i) \dfrac{n_f}{n_i - n_f}\left(1 - \dfrac{n_i}{\tilde n}\right) &\mathrm{if}\quad n_i < n \leq n_f \\
+\epsilon_f  &\mathrm{if}\quad n > n_f
 \end{cases},$$
 
 where $\tilde n \equiv n \mod m$, where $m$ is an integer which determines for how many episodes $\epsilon$ is kept constant before next decay.
@@ -37,12 +37,12 @@ The shape of $\epsilon$ is shown in the following plot:
 ## Result
 Initial result of the agent:
 
-![Episode 850](video/experience_0-episode-0.gif)
+!(video/experience_0-episode-0.gif)
 
 After 300 episodes:
 
-![Episode 850](video/experience_300-episode-0.gif)
+!(video/experience_300-episode-0.gif)
 
 At the end of the training:
 
-![Episode 850](video/experience_850-episode-0.gif)
+![](video/experience_591-episode-0.gif)
