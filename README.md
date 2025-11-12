@@ -41,7 +41,7 @@ Initial result of the agent:
 
 After 300 episodes:
 
-![](video/experience_500-episode-0.gif)
+![](video/experience_300-episode-0.gif)
 
 At the end of the training:
 
