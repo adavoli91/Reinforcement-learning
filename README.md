@@ -23,9 +23,9 @@ The exploration parameter $\epsilon$ is modelled in the following way, as a func
 
 $$\epsilon(n) =
 \begin{cases}
-\epsilon_i &\mathrm{if}\; n \leq n_i \\
-\epsilon_i + (\epsilon_f - \epsilon_i)\, \dfrac{n_f}{n_i - n_f}\,\left(1 - \dfrac{n_i}{\tilde n}\right) &\mathrm{if}\; n_i < n \leq n_f \\
-\epsilon_f  &\mathrm{if}\; n > n_f
+\epsilon_i &\mathrm{if} n \leq n_i \\
+\epsilon_i + (\epsilon_f - \epsilon_i) \dfrac{n_f}{n_i - n_f}\left(1 - \dfrac{n_i}{\tilde n}\right) &\mathrm{if} n_i < n \leq n_f \\
+\epsilon_f  &\mathrm{if} n > n_f
 \end{cases},$$
 
 where $\tilde n \equiv n \mod m$, where $m$ is an integer which determines for how many episodes $\epsilon$ is kept constant before next decay.
