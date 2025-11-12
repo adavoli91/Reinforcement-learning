@@ -49,4 +49,4 @@ After 300 episodes:
 
 At the end of the training:
 
-[Episode 850](video/experience_850-episode-0.mp4)
+![Episode 850](video/experience_850-episode-0.gif)
