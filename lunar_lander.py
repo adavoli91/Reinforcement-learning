@@ -1,11 +1,11 @@
 import numpy as np
 from collections import deque
 import gymnasium as gym
-from torch import nn, tensor, optim, no_grad
-from IPython import embed
 import yaml
 import pickle
 import torch
+from typing import Tuple
+from torch import nn, tensor, optim, no_grad
 
 config = yaml.load(open('./config.yaml'), Loader = yaml.FullLoader)
 config_model = config['model']
@@ -37,7 +37,7 @@ class Model(nn.Module):
         self.layer_relu = nn.ReLU()
         self.layer_out = nn.Linear(in_features = list_n_neurons[-1], out_features = action_num)
 
-    def forward(self, x: tensor) -> tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         '''
         Function to compute the action value function.
 
@@ -56,7 +56,8 @@ class Model(nn.Module):
 class Memory:
     def __init__(self, config_model: dict) -> None:
         '''
-        Class to build the memory buffer.
+        Class to build the memory buffer; the memory buffer is used to train the prediction model within
+        a single episode.
 
         Args:
             config_model: Dictionary containing the relevant parameters for model definition.
@@ -67,9 +68,9 @@ class Memory:
         self.batch_size = config_model['batch_size']
         self.device = config_model['device']
 
-    def sample(self) -> tuple[tensor, tensor, tensor, tensor, tensor]:
+    def sample(self) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         '''
-        Function to sample a batch of states observations.
+        Function to sample a batch of observations.
 
         Args: None.
 
@@ -91,7 +92,7 @@ class Memory:
         #
         return batch_states_pre, batch_actions, batch_rewards, batch_states_post, batch_terminal_states
     
-    def append_obs(self, state_pre: tensor, action: tensor, reward: tensor, state_post: tensor, terminal_state: tensor) -> None:
+    def append_obs(self, state_pre: torch.Tensor, action: torch.Tensor, reward: torch.Tensor, state_post: torch.Tensor, terminal_state: torch.Tensor) -> None:
         '''
         Function to append a set of observations to the memory buffer.
 
@@ -131,9 +132,9 @@ class Agent:
         # define optimizer
         self.optimzer = optim.Adam(self.model_pred.parameters(), lr = config_model['lr'])
 
-    def act(self, state: tensor, epsilon: float) -> int:
+    def act(self, state: torch.Tensor, epsilon: float) -> int:
         '''
-        Function to choose an action to take.
+        Function to choose the action to take.
 
         Args:
             state: Current state.
@@ -157,9 +158,9 @@ class Agent:
         #
         return action
     
-    def step(self, state: tensor, action: int, timestep: int) -> tuple[tensor, int, tensor, float, bool]:
+    def step(self, state: torch.Tensor, action: int, timestep: int) -> Tuple[torch.Tensor, int, torch.Tensor, float, bool]:
         '''
-        Function to perform a step during training.
+        Function to perform a training step (train the prediction model and update the target model).
 
         Args:
             state: Current (old) state.
@@ -182,22 +183,22 @@ class Agent:
         self.memory.append_obs(old_state, action, reward, state, terminal_state)
         # check if the buffer is long enough for training
         if len(self.memory.buffer) > self.batch_size:
-            # model training
+            # model training (every `n_timestep_update_target`/2 steps)
             if timestep%int(n_timestep_update_target/2) == 0:
                 # get batch of observations
                 batch_states_pre, batch_actions, batch_rewards, batch_states_post, batch_terminal_states = self.memory.sample()
                 # train prediction model
                 self.learn(batch_states_pre, batch_actions, batch_rewards, batch_states_post, batch_terminal_states)
-            # target model update
+            # update target model with weights of prediction model (every `n_timestep_update_target` steps)
             if timestep%n_timestep_update_target == 0:
                 self.update_target()
         #
         return old_state, action, state, reward, terminal_state
 
-    def learn(self, batch_states_pre: tensor, batch_actions: tensor, batch_rewards: tensor, batch_states_post: tensor,
-              batch_terminal_states: tensor) -> None:
+    def learn(self, batch_states_pre: torch.Tensor, batch_actions: torch.Tensor, batch_rewards: torch.Tensor, batch_states_post: torch.Tensor,
+              batch_terminal_states: torch.Tensor) -> None:
         '''
-        Function to perform a step during training.
+        Function to train the prediction model on a batch of data from the memory buffer.
 
         Args:
             batch_states_pre: Batch of old states.
@@ -242,9 +243,6 @@ def dqn(environment: object, config_model: dict) -> None:
 
     Returns: None.
     '''
-    len_memory = config_model['len_memory']
-    batch_size = config_model['batch_size']
-    #
     memory = Memory(config_model = config_model)
     agent = Agent(environment = environment, memory = memory, config_model = config_model)
     # initialize epsilon
@@ -261,16 +259,14 @@ def dqn(environment: object, config_model: dict) -> None:
         reward_ep = 0
         # compute epsilon for the given episode
         epsilon = epsilon_in
-        if episode > n_ep_start_decr_eps:
-            if episode < n_ep_keep_eps_fixed:
-                round_episode = round(episode/n_ep_step_decr_eps)*n_ep_step_decr_eps
-                time_factor_base = (epsilon_in - epsilon_fin)/epsilon_fin
-                time_factor_exp = (n_ep_start_decr_eps - round_episode)/(n_ep_keep_eps_fixed - n_ep_start_decr_eps)
-                epsilon = epsilon_fin + (epsilon_in - epsilon_fin)*time_factor_base**time_factor_exp
-                epsilon_fixed = epsilon
-            else:
-                epsilon = epsilon_fixed
-        # reset the environment
+        round_episode = np.floor(episode/n_ep_step_decr_eps)*n_ep_step_decr_eps
+        if round_episode <= n_ep_start_decr_eps:
+            epsilon = epsilon_in
+        elif n_ep_start_decr_eps < round_episode <= n_ep_keep_eps_fixed:
+            epsilon = epsilon_in - (epsilon_fin - epsilon_in)*n_ep_keep_eps_fixed/(n_ep_start_decr_eps - n_ep_keep_eps_fixed)*(1 - n_ep_start_decr_eps/round_episode)
+        else:
+            epsilon = epsilon_fin
+        # reset the environment (depending on the environment version, `environment.reset()` can return a tuple)
         state = environment.reset()
         if type(state) == tuple:
             state = state[0]
@@ -279,7 +275,7 @@ def dqn(environment: object, config_model: dict) -> None:
             # select an action
             action = agent.act(state, epsilon)
             # perform a step
-            old_state, action, state, reward, terminal_state = agent.step(state, action, timestep)
+            _, action, state, reward, terminal_state = agent.step(state, action, timestep)
             # update the reward
             reward_ep += reward
             #
@@ -294,10 +290,9 @@ def dqn(environment: object, config_model: dict) -> None:
             print(f'\rEpisode {episode}: epsilon = {epsilon}, episode reward = {np.mean(list_rew_ep_roll)}')
         if np.mean(list_rew_ep_roll) >= 200:
             break
-        epsilon = max(epsilon*0.995, 0.15)
     pickle.dump(list_rew_ep, open('./artifacts/list_rew_ep.pickle', 'wb'))
     torch.save(agent.model_pred.state_dict(), f'./artifacts/checkpoint_{episode}.pth')
 
 if __name__ == '__main__':
-    env = gym.make('LunarLander-v2')
+    env = gym.make('LunarLander-v3')
     dqn(environment = env, config_model = config_model)
